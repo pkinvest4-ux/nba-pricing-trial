@@ -1,7 +1,7 @@
 # NBA pricing model (trial)
 
 Prices NBA games with what was known by the end of the day before, and grades the price against
-the pre-game closing line. The plain-language summary is in [WRITEUP.md](WRITEUP.md).
+the pre-game closing line. The one-page summary is [WRITEUP.md](WRITEUP.md); the full notes are [DETAILS.md](DETAILS.md).
 
 ## Run it
 
@@ -34,6 +34,6 @@ The first run downloads everything (ESPN and the NBA's injury reports) into `dat
 - Each day's games are priced before any of that day's results or lines are used.
 - Nothing from game day: injuries come from the report published the evening before.
 - Every setting is chosen on 2024-25. The code was frozen before each 2025-26 run (commits `dedd7fd`
-  and `ffbb83d`; see WRITEUP for why there were two).
+  and `ffbb83d`; see DETAILS for why there were two).
 - Grading uses one book's pre-game close per game, as recorded by ESPN.
 - Any "spread" over 30 points, or total outside 170 to 280, is bad data and dropped.
