@@ -1,15 +1,15 @@
 # Pricing NBA games the night before
 
-**Result.** On 2025-26, a season I never used to choose a setting, my spreads were **2.10 points**
+**Result.** On 2025-26, a season I never used to choose a setting, my spreads were **2.05 points**
 from the pre-game closing line on average, down from **2.99** for a ratings-only model. On the 429
-games where the night-before injury report exists, they were **1.92** points off. The same approach
+games where the night-before injury report exists, they were **1.87** points off. The same approach
 prices totals **2.49 points** from the closing total. The close is still the better forecast of the
 final score (10.88 points off against my 11.17), as I would expect.
 
-**The model.** Every team has a rating in points and every player a value from his own box scores.
-The predicted margin is the rating gap, plus home court, plus the strength gap between the players
-expected to be available, plus a back-to-back penalty and the regulars listed out on the NBA injury
-report. It walks forward one day at a time: it prices a day's games, then learns from their results
+**The model.** Every team has a rating in points, and every player a rating: how many points per 48
+minutes he adds, learned mostly from closing lines. The predicted margin is the team rating gap, plus
+home court, plus the strength gap between the expected lineups (recent players minus those listed
+out on the NBA injury report), plus a back-to-back penalty and an injury adjustment. It walks forward one day at a time: it prices a day's games, then learns from their results
 and closing lines. Nothing from game day is used; injuries come from the report at 8:30 PM the
 evening before.
 
@@ -21,7 +21,8 @@ evening before.
 | + learn from past closing lines | 2.44 | +0.55 (0.43 to 0.67) |
 | + second night of a back-to-back | 2.21 | +0.23 (0.17 to 0.29) |
 | + night-before injury report | 2.14 | +0.08 (0.04 to 0.12); +0.22 where the report exists |
-| + player and team ratings combined | **2.10** | +0.04 (0.02 to 0.05) |
+| + box-score player values | 2.10 | +0.04 (0.02 to 0.05) |
+| + full player ratings with expected lineups | **2.05** | +0.05 (0.02 to 0.08) |
 
 I chose every setting on 2024-25, checked new ideas on 2023-24, and froze the code in git before
 each 2025-26 run. A gain counts only if it holds in 95% of 10,000 resamples of the games.
@@ -37,9 +38,11 @@ The NBA's injury report archive stops on Dec 21, 2025, which is why I show those
 caps, faster early-season learning, per-team home court and "sat out last game" all came out as
 noise. The model already learns from every past closing line, and the market had priced them in.
 
-**To be transparent.** The spread model ran on 2025-26 twice: a first version (2.14) and the final
-one after adding player ratings, which I had chosen on 2024-25 and confirmed on 2023-24 first. The
-totals model ran once.
+**To be transparent.** The spread model ran on 2025-26 three times: a first version (2.14), then
+with box-score player values (2.10), then with full player ratings (2.05). Each addition was chosen
+on 2024-25 first and the code frozen before each run. Full player ratings showed no gain on 2023-24,
+which has no injury reports; turning the reports off in 2024-25 removed the gain there too, so their
+value is in turning the injury report into a lineup. The totals model ran once.
 
 **Second numbers.** Win probability: 5.2 percentage points from the no-vig closing price, log loss
 0.587 against the close's 0.570. Totals: 3.59 to 2.49 points off the closing total, every step real.

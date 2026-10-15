@@ -1,8 +1,8 @@
 # Full notes: pricing NBA games the night before
 
 **Result:** on the 2025-26 season (1,230 games, never used to choose a setting), my spreads were
-**2.10 points** from the pre-game closing line on average, down from **2.99** for a ratings-only
-model. On the 429 games where the night-before injury report exists, they were **1.92** points off.
+**2.05 points** from the pre-game closing line on average, down from **2.99** for a ratings-only
+model. On the 429 games where the night-before injury report exists, they were **1.87** points off.
 The same approach prices totals **2.49 points** from the closing total. Every improvement holds up on
 the unseen season, and the close is still the better forecast of the final score, as I would expect.
 
@@ -44,9 +44,12 @@ I chose every setting on 2024-25, checked new ideas on 2023-24 as well, and froz
 before each run on 2025-26. Each gain is checked by comparing two models on the same games and
 resampling them 10,000 times: if the gain shows up in 95% of resamples, it is not luck.
 
-**To be transparent:** the spread model was run on 2025-26 twice, once as a first version (commit
-`dedd7fd`, 2.14 points) and once after adding player ratings (commit `ffbb83d`). Player ratings were
-chosen on 2024-25 and confirmed on 2023-24 before that second run. The totals model was run once.
+**To be transparent:** the spread model was run on 2025-26 three times: a first version (commit
+`dedd7fd`, 2.14 points), with box-score player values (commit `ffbb83d`, 2.10), and with full player
+ratings (commit `a6fa830`, 2.05). Each addition was chosen on 2024-25 before its run. Full player
+ratings gained +0.065 on 2024-25 but only +0.007 on 2023-24, which has no injury reports; with the
+reports switched off, 2024-25's gain also fell to +0.014, so the value is in using the report to set
+the expected lineup. The totals model was run once.
 
 ## Results on 2025-26
 
@@ -56,13 +59,16 @@ chosen on 2024-25 and confirmed on 2023-24 before that second run. The totals mo
 | + learn from past closing lines | 2.44 | 2.42 |
 | + second night of a back-to-back | 2.21 | 2.15 |
 | + night-before injury report | 2.14 | **1.92** |
-| + player and team ratings combined | **2.10** | 1.93 |
+| + box-score player values | 2.10 | 1.93 |
+| + full player ratings with expected lineups | **2.05** | **1.87** |
 
 - **Past closes:** +0.55 points (95% range 0.43 to 0.67). The market knows things a box score does not.
 - **Back-to-backs:** worth about 2 points to the rested team. +0.23 (0.17 to 0.29).
 - **Injury report:** +0.22 where it exists (0.11 to 0.34), +0.08 over the full season.
-- **Player ratings:** +0.04 (0.02 to 0.05), the same gain it showed on 2024-25 and 2023-24. Where the
-  injury report exists it adds nothing extra, since both measure who is available.
+- **Box-score player values:** +0.04 (0.02 to 0.05), the same gain as on 2024-25 and 2023-24.
+- **Full player ratings:** +0.05 (0.02 to 0.08). Each player's points per 48 minutes is learned mostly
+  from closing lines (learning from results alone barely helped). On the injury-report games: +0.06
+  (-0.01 to 0.13), not statistically clear on 429 games.
 - **Against the final score:** the close misses by 10.88 points, my model by 11.17.
 
 **Win probability**, as a second number: 5.2 percentage points from the no-vig closing price on
