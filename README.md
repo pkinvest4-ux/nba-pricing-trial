@@ -25,6 +25,7 @@ The first run downloads everything (ESPN and the NBA's injury reports) into `dat
 | `fetch_injuries.py` | The NBA's official injury report as of 8:30 PM the evening before each game |
 | `model.py` | Spread model: team and player ratings, improvements, tuning, grading, win probability |
 | `totals.py` | Over/under model: offence and defence ratings, graded against the closing total |
+| `explain.py` | Shows how one game was priced, piece by piece: `python3 explain.py WSH DET 2025-11-10` |
 | `experiments.py`, `experiment_players.py` | Ideas tried on 2024-25 and 2023-24, and which were kept |
 | `check_lines.py` | Checks one source of closing lines against another (see DETAILS) |
 | `fetch_lines.py` | SportsbookReview lines: downloaded and checked, not used (in-game "latest" lines) |

@@ -309,7 +309,7 @@ def add_lineups(games, recent_games=3, window=10, use_report=True):
 
 def run(games, k=0.03, hca=2.5, carry=0.7, k_market=0.0, b2b=0.0, inj=0.0,
         ret=0.0, three=0.0, rest=0.0, tz=0.0, mov_cap=None, early=0.0, home_own=0.0, home_n0=100, roster=0.0,
-        p_w=0.0, p_k=0.0, p_mkt=0.0, p_carry=0.8):
+        p_w=0.0, p_k=0.0, p_mkt=0.0, p_carry=0.8, trace=None):
     """Walk forward one day at a time. Returns each game's predicted home margin."""
     rating, season, preds, played = {}, None, [], {}
     home_sum, home_n = {}, {}  # each team's leftover error in its own home games (all seasons so far)
@@ -335,6 +335,18 @@ def run(games, k=0.03, hca=2.5, carry=0.7, k_market=0.0, b2b=0.0, inj=0.0,
             p += three * (g["away_3in4"] - g["home_3in4"])
             p += rest * (g["home_rest"] - g["away_rest"])
             p += tz * (g["away_tz"] - g["home_tz"])
+            if trace is not None:  # "show your working" for one game, used by explain.py
+                lineup = lambda side: sorted(((pl, m, prate.get(pl, 0.0)) for pl, m in g[side + "_exp"]),
+                                             key=lambda x: -x[1])
+                both = g["home_exp"] and g["away_exp"]
+                trace[g["id"]] = {
+                    "team": (rating.get(g["home"], 0.0), rating.get(g["away"], 0.0)),
+                    "home_court": 0 if g["neutral"] else hca,
+                    "b2b": b2b * (g["away_b2b"] - g["home_b2b"]),
+                    "injury": inj * (g["away_miss"] - g["home_miss"]),
+                    "box_players": roster * (g["home_roster"] - g["away_roster"]) if g["home_roster"] and g["away_roster"] else 0.0,
+                    "players": p_w * (sum(r * m for _, m, r in lineup("home")) - sum(r * m for _, m, r in lineup("away"))) / 48 if both else 0.0,
+                    "lineups": (lineup("home"), lineup("away")), "total": p}
             day_preds.append(p)
         preds.extend(day_preds)
         for g, p in zip(day, day_preds):  # then learn from it
