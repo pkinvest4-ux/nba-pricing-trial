@@ -1,19 +1,22 @@
 # Pricing NBA games the night before: how close to the close?
 
-**Result:** on the 2025-26 season (1,230 games, never used to choose anything), my spreads were
-**2.14 points** from the pre-game closing line on average, down from **2.99** for a ratings-only
+**Result:** on the 2025-26 season (1,230 games, never used to choose a setting), my spreads were
+**2.10 points** from the pre-game closing line on average, down from **2.99** for a ratings-only
 model. On the 429 games where the night-before injury report exists, they were **1.92** points off.
-Every improvement holds up on that unseen season. The close is still the better forecast of the
-final score, which is what I would expect.
+The same approach prices totals **2.49 points** from the closing total. Every improvement holds up on
+the unseen season, and the close is still the better forecast of the final score, as I would expect.
 
 ## What the model knows, and when
 
-Every team has a rating in points. Predicted home margin = home rating minus away rating, plus
-home-court advantage, plus two things known the night before: a team playing the second night of a
-back-to-back, and regulars listed Out, Doubtful or Questionable on the NBA's injury report.
+Every team has a rating in points, and every player a value from his own box scores (Game Score per
+minute above a bench player, times his usual minutes). Predicted home margin = home rating minus away
+rating, plus home-court advantage, plus the gap in strength between the players expected to be
+available, plus two things known the night before: a team on the second night of a back-to-back, and
+regulars listed Out, Doubtful or Questionable on the NBA's injury report. Because players carry their
+own value, the team rating only has to learn what the players do not explain.
 
-It walks through seasons one day at a time. It prices every game on a day first, then learns from
-that day's results and closing lines. Nothing from game day is used: the injury information is the
+The model walks through seasons one day at a time. It prices every game on a day first, then learns
+from that day's results and closing lines. Nothing from game day is used: injury information is the
 NBA's report as it stood at 8:30 PM the evening before.
 
 ## The answer key, and the data problems behind it
@@ -29,44 +32,68 @@ You asked for Pinnacle's close. Its history is only sold commercially, so I look
 - So the answer key is **one book's pre-game close as recorded by ESPN**: ESPN BET for 2024-25, and
   DraftKings for 2025-26 (971 games), falling back to ESPN BET for the 259 early-season games before
   ESPN changed partners.
-- Other fixes: a sanity rule drops "spreads" over 30 points (ESPN once stored prices like -110 in that
-  field), All-Star and exhibition games are removed, and traded players stop counting for their old
-  team's injuries.
+- **The NBA's injury report archive stops on Dec 21, 2025.** Later games get no injury adjustment,
+  which is why I report the 429 games that have it separately.
+- Other fixes: a sanity rule drops "spreads" over 30 and totals outside 170 to 280 (ESPN once stored
+  prices like -110 in those fields), All-Star games are removed, and traded players stop counting
+  for their old team.
 
 ## How I tested it
 
-I chose every setting on 2024-25 and froze the code in git (commit `dedd7fd`) before running
-2025-26 once. Each gain is checked by comparing two models on the same games and resampling those
-games 10,000 times: if the gain shows up in 95% of resamples, it is not luck.
+I chose every setting on 2024-25, checked new ideas on 2023-24 as well, and froze the code in git
+before each run on 2025-26. Each gain is checked by comparing two models on the same games and
+resampling them 10,000 times: if the gain shows up in 95% of resamples, it is not luck.
+
+**To be transparent:** the spread model was run on 2025-26 twice, once as a first version (commit
+`dedd7fd`, 2.14 points) and once after adding player ratings (commit `ffbb83d`). Player ratings were
+chosen on 2024-25 and confirmed on 2023-24 before that second run. The totals model was run once.
 
 ## Results on 2025-26
 
-| Model | Points off the close (1,230 games) | With injury report (429 games) |
+| Spread model | Points off the close (1,230 games) | With injury report (429 games) |
 |---|---|---|
 | Ratings from results only | 2.99 | 2.88 |
 | + learn from past closing lines | 2.44 | 2.42 |
 | + second night of a back-to-back | 2.21 | 2.15 |
-| + night-before injury report | **2.14** | **1.92** |
+| + night-before injury report | 2.14 | **1.92** |
+| + player and team ratings combined | **2.10** | 1.93 |
 
 - **Past closes:** +0.55 points (95% range 0.43 to 0.67). The market knows things a box score does not.
-- **Back-to-backs:** worth about 2 points to the rested team. +0.23 points (0.17 to 0.29).
-- **Injuries:** +0.22 points where the report exists (0.11 to 0.34). Only +0.08 over the full season,
-  because the NBA's report archive stops on Dec 21, 2025, so later games get no injury adjustment.
-- **Against the final score:** the close misses by 10.88 points on average, my model by 11.17. On the
-  injury-report games the gap is only 0.12 points and not statistically clear.
+- **Back-to-backs:** worth about 2 points to the rested team. +0.23 (0.17 to 0.29).
+- **Injury report:** +0.22 where it exists (0.11 to 0.34), +0.08 over the full season.
+- **Player ratings:** +0.04 (0.02 to 0.05), the same gain it showed on 2024-25 and 2023-24. Where the
+  injury report exists it adds nothing extra, since both measure who is available.
+- **Against the final score:** the close misses by 10.88 points, my model by 11.17.
 
-**Win probability**, as a second number: turning each margin into a probability (margins vary about
-13 points around the prediction), mine were 5.3 percentage points from the no-vig closing price on
-average. Log loss: mine 0.586, the close 0.570, a coin flip 0.693. Calibration is good in the middle
-(when I said 60 to 80%, the home team won 74%) and a little overconfident at the extremes.
+**Win probability**, as a second number: 5.2 percentage points from the no-vig closing price on
+average; log loss 0.587 against the close's 0.570 and a coin flip's 0.693. Calibration is good in the
+middle (when I said 60 to 80%, the home team won 74%) and a little overconfident at the extremes.
+The tuning seasons did not support widening the curve, so I did not adjust it to fit the test.
+
+## Totals (over/under)
+
+Each team gets an offence and a defence rating, around a league scoring level that drifts over time.
+
+| Totals model | Points off the closing total (1,230 games) |
+|---|---|
+| Ratings from results only | 3.59 |
+| + learn from past closing totals | 2.58 |
+| + back-to-backs (tired teams score about 0.5 less) | 2.55 |
+| + injury report (missing regulars lower their team's points) | **2.49** |
+
+Every step is real on 2025-26, and 2.49 matches the tuning season exactly. The close still beats the
+model on the real totals (14.56 against 14.79 points off).
 
 ## What did not work
 
-"Regulars who sat out the previous game" from box scores, which exists for every game, added nothing
-on 2024-25. Yesterday's closing line, which the ratings already learn from, had priced that absence
-in. The injury report adds value because it says who is out tomorrow.
+Each was chosen on 2024-25, checked on 2023-24, and dropped because the gain was noise: players
+returning from injury, three games in four nights, rest-day differences, time zones crossed, capping
+blowout margins, faster learning early in the season, a separate home-court edge for each team, and
+"regulars who sat out the previous game". The common reason: the model already learns from every past
+closing line, and the market had priced those things in. Back-to-backs and tomorrow's injury report
+are the schedule and news effects strong enough to add something on top.
 
 ## What I would do next
 
 Find day-before injury news for 2026 (another archive, or saving the report each night going
-forward), rate players rather than teams, and soften the extremes of the win probability.
+forward), project each player's minutes instead of using his average, and add pace to the totals.

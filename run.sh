@@ -7,3 +7,5 @@ cd "$(dirname "$0")"
 [ -f data/boxscores.json ] || python3 fetch_boxscores.py
 [ -f data/injuries.json ] || python3 fetch_injuries.py
 python3 model.py "$@"
+echo
+python3 totals.py "$@"
