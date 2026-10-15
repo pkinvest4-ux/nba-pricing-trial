@@ -2,7 +2,7 @@
 
 ESPN keeps in-game odds under separate providers named '... - Live Odds', so a book's 'close' here is its
 last PRE-GAME line. (SportsbookReview's 'latest' line turned out to include in-game odds; see WRITEUP.)
-Writes data/espn_odds.json: {game_id: {book: {open_spread, close_spread, spread, open_ml_home, ...}}}
+Writes data/espn_odds.json: {game_id: {book: {open_spread, close_spread, open_total, close_total, ...}}}
 Spreads are the home team's line, negative = home favoured."""
 import json, pathlib, concurrent.futures as cf
 from common import fetch
@@ -10,13 +10,13 @@ from common import fetch
 
 def num(v):
     if isinstance(v, dict):
-        v = v.get("american") or v.get("alternateDisplayValue")
+        v = v.get("american") or v.get("alternateDisplayValue") or v.get("value")
     if v in (None, ""):
         return None
     if str(v).upper() == "EVEN":
         return 100.0
     try:
-        return float(str(v).replace("+", ""))
+        return float(str(v).replace("+", "").lstrip("ouOU"))  # totals look like 'o224.5' 
     except ValueError:
         return None
 
@@ -29,8 +29,9 @@ def pull(gid):
         if "Live" in name:
             continue  # in-game odds
         h, a = it.get("homeTeamOdds") or {}, it.get("awayTeamOdds") or {}
-        rec = {"spread": num(it.get("spread"))}
+        rec = {"spread": num(it.get("spread")), "total": num(it.get("overUnder"))}
         for when in ("open", "close"):
+            rec[f"{when}_total"] = num(((it.get(when) or {}).get("total")))
             rec[f"{when}_spread"] = num((h.get(when) or {}).get("pointSpread"))
             rec[f"{when}_ml_home"] = num((h.get(when) or {}).get("moneyLine"))
             rec[f"{when}_ml_away"] = num((a.get(when) or {}).get("moneyLine"))

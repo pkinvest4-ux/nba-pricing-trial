@@ -2,8 +2,9 @@
 against the closing line.
 
 How it works, in plain words:
-- Every team has a rating in points. Predicted home margin = home rating - away rating
-  + home-court advantage, plus two adjustments known the night before:
+- Every team has a rating in points, and every player a value from his own box scores. Predicted
+  home margin = home rating - away rating + home-court advantage + the gap in the strength of the
+  players expected to be available, plus two adjustments known the night before:
   a team on the second night of a back-to-back, and regulars listed out on the injury report.
 - The model walks through the seasons one day at a time. It prices every game on a day first,
   and only then learns from that day's results and closing lines. So no game ever sees its own
@@ -78,6 +79,7 @@ def load():
               f"({', '.join(b + ' ' + str(sum(g['key_book'] == b for g in sg)) for b in key_book(season))})")
     add_rest(games)
     add_injuries(games)
+    add_roster(games)
     return games
 
 
@@ -92,14 +94,31 @@ def game_days(games):
     return days
 
 
+TIMEZONE = {  # hours behind Eastern for each home arena
+    "ATL": 0, "BKN": 0, "BOS": 0, "CHA": 0, "CLE": 0, "DET": 0, "IND": 0, "MIA": 0, "NY": 0, "ORL": 0,
+    "PHI": 0, "TOR": 0, "WSH": 0, "CHI": 1, "DAL": 1, "HOU": 1, "MEM": 1, "MIL": 1, "MIN": 1, "NO": 1,
+    "OKC": 1, "SA": 1, "DEN": 2, "PHX": 2, "UTAH": 2, "GS": 3, "LAC": 3, "LAL": 3, "POR": 3, "SAC": 3}
+
+
 def add_rest(games):
-    """Second night of a back-to-back. The schedule is public months ahead."""
-    last = {}
+    """Schedule effects, all public months ahead: second night of a back-to-back, third game in four
+    nights, rest-day difference (capped at 3), and time zones crossed since the team's last game."""
+    last, history, where = {}, {}, {}
     for g in games:
         d = local_day(g)
+        venue = TIMEZONE[g["home"]]
         for side in ("home", "away"):
-            g[side + "_b2b"] = g[side] in last and (d - last[g[side]]).days == 1
-            last[g[side]] = d
+            t = g[side]
+            rest = (d - last[t]).days if t in last else 7
+            g[side + "_b2b"] = rest == 1
+            recent = [x for x in history.get(t, []) if (d - x).days <= 3]
+            g[side + "_3in4"] = len(recent) >= 2
+            g[side + "_rest"] = min(rest - 1, 3)
+            g[side + "_tz"] = abs(venue - where[t]) if t in where else 0
+            last[t] = d
+            history.setdefault(t, []).append(d)
+            history[t] = history[t][-3:]
+            where[t] = venue
 
 
 BENCH_RATE, MIN_MPG, MAX_MISS = 0.15, 16, 40.0  # from the practice model, chosen there on a tuning season
@@ -125,16 +144,23 @@ def add_injuries(games):
     yesterday's closing line, which the ratings already learn from, had priced that absence in."""
     for g in games:
         g["home_miss"] = g["away_miss"] = 0.0
+        g["home_back"] = g["away_back"] = 0.0
         g["has_report"] = False
     if not (os.path.exists("data/boxscores.json") and os.path.exists("data/injuries.json")):
         print("no injury data yet")
         return
     box, inj = json.load(open("data/boxscores.json")), json.load(open("data/injuries.json"))
     recent, played, last_team = {}, {}, {}  # team -> last 10 ids; player -> {id: (min, gmsc)}; player -> team
+    season_apps, season = {}, None  # player -> this season's (min, gmsc) with his current team
     for day in game_days(games):
+        if day[0]["season"] != season:
+            season, season_apps = day[0]["season"], {}
         for g in day:
             listed = inj.get(g["id"])
             g["has_report"] = listed is not None
+            if listed is not None:
+                g["home_back"], g["away_back"] = (returning(g, side, listed, recent, played, last_team, season_apps)
+                                                  for side in ("home", "away"))
             for side in ("home", "away"):
                 t, miss = g[side], 0.0
                 for player, status in (listed or {}).get(t, {}).items():
@@ -154,31 +180,118 @@ def add_injuries(games):
             for t in (g["home"], g["away"]):
                 for p in box.get(g["id"], {}).get(t, []):
                     if p["min"] > 0:
-                        played.setdefault(norm(p["name"]), {})[g["id"]] = (p["min"], p["gmsc"])
-                        last_team[norm(p["name"])] = t
+                        pl = norm(p["name"])
+                        if last_team.get(pl) != t:
+                            season_apps[pl] = []  # new team: start his record here
+                        played.setdefault(pl, {})[g["id"]] = (p["min"], p["gmsc"])
+                        last_team[pl] = t
+                        season_apps.setdefault(pl, []).append((p["min"], p["gmsc"]))
                 recent.setdefault(t, deque(maxlen=10)).append(g["id"])
+
+
+def returning(g, side, listed, recent, played, last_team, season_apps):
+    """Value of regulars who missed recent games but are NOT on tonight's report, so are expected back.
+    The team's rating dropped while they were out; this adds them back in proportion to how much of the
+    last 10 games they missed. Their value uses this season's games with the team, not just the last 10."""
+    t, back = g[side], 0.0
+    on_report = {norm(n) for n, s in listed.get(t, {}).items() if STATUS_WEIGHT.get(s)}
+    last10 = list(recent.get(t, ()))
+    if len(last10) < 5:
+        return 0.0
+    for pl, apps in season_apps.items():
+        if last_team.get(pl) != t or pl in on_report or len(apps) < 10:
+            continue
+        missed = sum(gid not in played.get(pl, {}) for gid in last10)
+        if missed < 2:
+            continue
+        mins = sum(m for m, _ in apps)
+        if mins / len(apps) < MIN_MPG:
+            continue
+        rate = (sum(x for _, x in apps) + PRIOR_RATE * PRIOR_MIN) / (mins + PRIOR_MIN)
+        back += max(0.0, rate - BENCH_RATE) * (mins / len(apps)) * missed / len(last10)
+    return min(back, MAX_MISS)
+
+
+def add_roster(games, window=20, recent_games=3):
+    """Expected strength of each team's available players, known the night before: everyone who played
+    in at least one of the team's last 3 games THIS season. A player's value is his Game Score per minute
+    above a bench replacement, times his usual minutes, from his last 20 games with this team; the
+    team's total is scaled to the 240 minutes it actually plays. Box scores of earlier days only."""
+    for g in games:
+        g["home_roster"] = g["away_roster"] = 0.0
+    if not os.path.exists("data/boxscores.json"):
+        return
+    box = json.load(open("data/boxscores.json"))
+    logs, last_team, team_games, season = {}, {}, {}, None  # player -> deque of (min, gmsc) with current team
+    for day in game_days(games):
+        if day[0]["season"] != season:
+            season, team_games = day[0]["season"], {}  # only this season's games define who is available
+        for g in day:
+            for side in ("home", "away"):
+                t = g[side]
+                available = {norm(p["name"]) for gid in team_games.get(t, [])[-recent_games:]
+                             for p in box.get(gid, {}).get(t, []) if p["min"] > 0}
+                players = []
+                for pl in available:
+                    if last_team.get(pl) != t or len(logs.get(pl, ())) < 3:
+                        continue
+                    mins = sum(m for m, _ in logs[pl])
+                    rate = (sum(x for _, x in logs[pl]) + PRIOR_RATE * PRIOR_MIN) / (mins + PRIOR_MIN)
+                    players.append((rate, mins / len(logs[pl])))
+                total_min = sum(m for _, m in players)
+                scale = 240 / total_min if total_min > 240 else 1.0
+                g[side + "_roster"] = sum((r - BENCH_RATE) * m * scale for r, m in players)
+        for g in day:
+            for t in (g["home"], g["away"]):
+                if g["id"] not in box:
+                    continue
+                for p in box[g["id"]].get(t, []):
+                    if p["min"] > 0:
+                        pl = norm(p["name"])
+                        if last_team.get(pl) != t:
+                            logs[pl] = deque(maxlen=window)  # new team: start his record here
+                        logs.setdefault(pl, deque(maxlen=window)).append((p["min"], p["gmsc"]))
+                        last_team[pl] = t
+                team_games.setdefault(t, []).append(g["id"])
 
 
 # ---------- model ----------
 
-def run(games, k=0.03, hca=2.5, carry=0.7, k_market=0.0, b2b=0.0, inj=0.0):
+def run(games, k=0.03, hca=2.5, carry=0.7, k_market=0.0, b2b=0.0, inj=0.0,
+        ret=0.0, three=0.0, rest=0.0, tz=0.0, mov_cap=None, early=0.0, home_own=0.0, home_n0=100, roster=0.0):
     """Walk forward one day at a time. Returns each game's predicted home margin."""
-    rating, season, preds = {}, None, []
+    rating, season, preds, played = {}, None, [], {}
+    home_sum, home_n = {}, {}  # each team's leftover error in its own home games (all seasons so far)
     for day in game_days(games):
         if day[0]["season"] != season:  # new season: ratings shrink toward average
-            season = day[0]["season"]
+            season, played = day[0]["season"], {}
             rating = {t: r * carry for t, r in rating.items()}
         day_preds = []
         for g in day:  # price the whole day first
             p = rating.get(g["home"], 0.0) - rating.get(g["away"], 0.0) + (0 if g["neutral"] else hca)
+            if home_own and not g["neutral"]:  # this team's own home edge, pulled toward the league's
+                p += home_own * home_sum.get(g["home"], 0.0) / (home_n.get(g["home"], 0) + home_n0)
             p += b2b * (g["away_b2b"] - g["home_b2b"])
             p += inj * (g["away_miss"] - g["home_miss"])
+            if g["home_roster"] and g["away_roster"]:  # both rosters known
+                p += roster * (g["home_roster"] - g["away_roster"])
+            p += ret * (g["home_back"] - g["away_back"])
+            p += three * (g["away_3in4"] - g["home_3in4"])
+            p += rest * (g["home_rest"] - g["away_rest"])
+            p += tz * (g["away_tz"] - g["home_tz"])
             day_preds.append(p)
         preds.extend(day_preds)
         for g, p in zip(day, day_preds):  # then learn from it
-            err = g["margin"] - p
-            rating[g["home"]] = rating.get(g["home"], 0.0) + k * err
-            rating[g["away"]] = rating.get(g["away"], 0.0) - k * err
+            margin = g["margin"] if mov_cap is None else max(-mov_cap, min(mov_cap, g["margin"]))
+            err = margin - p
+            n = min(played.get(g["home"], 0), played.get(g["away"], 0))
+            kk = k * (1 + early * max(0, 20 - n) / 20)  # learn faster while ratings are least certain
+            rating[g["home"]] = rating.get(g["home"], 0.0) + kk * err
+            rating[g["away"]] = rating.get(g["away"], 0.0) - kk * err
+            played[g["home"]], played[g["away"]] = played.get(g["home"], 0) + 1, played.get(g["away"], 0) + 1
+            if not g["neutral"]:
+                home_sum[g["home"]] = home_sum.get(g["home"], 0.0) + (g["margin"] - p)
+                home_n[g["home"]] = home_n.get(g["home"], 0) + 1
             if k_market and g["learn_close"] is not None:
                 m_err = -g["learn_close"] - p
                 rating[g["home"]] += k_market * m_err
@@ -203,7 +316,10 @@ def tuned_models(games):
     _, mkt = tune(games, [dict(base, k_market=x) for x in (0.05, 0.1, 0.15, 0.2, 0.3, 0.4)])
     _, rest = tune(games, [dict(mkt, b2b=x) for x in (0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0)])
     _, injp = tune(games, [dict(rest, inj=x) for x in (0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5)])
-    return {"baseline": base, "+ past closes": mkt, "+ back-to-backs": rest, "+ injuries": injp}
+    _, plyr = tune(games, [dict(injp, roster=w, k=k) for w in (0.02, 0.03, 0.05, 0.07, 0.1)
+                           for k in (0.015, 0.02, 0.025, 0.03)])
+    return {"baseline": base, "+ past closes": mkt, "+ back-to-backs": rest, "+ injuries": injp,
+            "+ player ratings": plyr}
 
 
 def bootstrap(a, b, n=10000, seed=7):
