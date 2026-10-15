@@ -9,9 +9,9 @@ final score (10.88 points off against my 11.17), as I would expect.
 **The model.** Every team has a rating in points, and every player a rating: how many points per 48
 minutes he adds, learned mostly from closing lines. The predicted margin is the team rating gap, plus
 home court, plus the strength gap between the expected lineups (recent players minus those listed
-out on the NBA injury report), plus a back-to-back penalty and an injury adjustment. It walks forward one day at a time: it prices a day's games, then learns from their results
-and closing lines. Nothing from game day is used; injuries come from the report at 8:30 PM the
-evening before.
+out on the NBA injury report), plus a back-to-back penalty and an injury adjustment. It walks
+forward one day at a time: it prices a day's games, then learns from their results and closing
+lines. Nothing from game day is used; injuries come from the report at 8:30 PM the evening before.
 
 **What moved the number (points off the close, 2025-26):**
 
