@@ -26,7 +26,7 @@ The first run downloads everything (ESPN and the NBA's injury reports) into `dat
 | `model.py` | Spread model: team and player ratings, improvements, tuning, grading, win probability |
 | `totals.py` | Over/under model: offence and defence ratings, graded against the closing total |
 | `experiments.py` | The ideas tried on 2024-25 and 2023-24, and which were kept |
-| `check_lines.py`, `check_absence.py` | Data checks described in WRITEUP |
+| `check_lines.py` | Checks one source of closing lines against another (see DETAILS) |
 | `fetch_lines.py` | SportsbookReview lines: downloaded and checked, not used (in-game "latest" lines) |
 
 ## Rules the code follows
