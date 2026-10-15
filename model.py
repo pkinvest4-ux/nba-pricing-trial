@@ -244,8 +244,8 @@ def win_probability(games, preds, season):
     ours, book = [ll(p, w) for p, _, w in rows], [ll(b, w) for _, b, w in rows]
     m, lo, hi = bootstrap(ours, book)
     print(f"\n{season} win probability ({len(rows)} games, bell-curve width {sigma:.1f} points)")
-    print(f"  average gap to the consensus no-vig close: {st.mean(abs(p - b) for p, b, _ in rows) * 100:.1f} points")
-    print(f"  log loss: model {st.mean(ours):.4f}, consensus close {st.mean(book):.4f}, coin flip {math.log(2):.4f}"
+    print(f"  average gap to the no-vig close: {st.mean(abs(p - b) for p, b, _ in rows) * 100:.1f} points")
+    print(f"  log loss: model {st.mean(ours):.4f}, closing price {st.mean(book):.4f}, coin flip {math.log(2):.4f}"
           f"  (close better by {m:.4f}, {lo:.4f} to {hi:.4f})")
     for lo_b in (0.0, 0.2, 0.4, 0.6, 0.8):
         b = [w for p, _, w in rows if lo_b <= p < lo_b + 0.2]
