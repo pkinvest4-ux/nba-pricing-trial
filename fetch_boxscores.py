@@ -1,9 +1,10 @@
-"""Player minutes and Game Score for every game 2021-22 to 2025-26, from ESPN box scores.
+"""Player minutes and Game Score for every game 2014-15 to 2025-26, from ESPN box scores.
 Writes data/boxscores.json: {game_id: {team: [{"name", "min", "gmsc"}]}}."""
 import json, pathlib, concurrent.futures as cf
 from common import fetch, team
 
-SEASONS = ("2021-22", "2022-23", "2023-24", "2024-25", "2025-26")
+SEASONS = ("2014-15", "2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21",
+           "2021-22", "2022-23", "2023-24", "2024-25", "2025-26")
 
 
 def made_att(s):
@@ -40,8 +41,8 @@ if __name__ == "__main__":
     games = [json.loads(l) for l in open("data/games.jsonl")]
     path = pathlib.Path("data/boxscores.json")
     out = json.loads(path.read_text()) if path.exists() else {}  # keep what is already downloaded
-    todo = [g["id"] for g in games if g["season"] in SEASONS and g["id"] not in out]
-    with cf.ThreadPoolExecutor(8) as ex:
+    todo = [g["id"] for g in games if g["season"] in SEASONS and not out.get(g["id"])]  # missing or empty
+    with cf.ThreadPoolExecutor(4) as ex:  # gentler: ESPN refuses some requests under load
         out.update(dict(ex.map(pull, todo)))
     path.write_text(json.dumps(out))
     print(len(out), "box scores,", sum(not v for v in out.values()), "empty")

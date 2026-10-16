@@ -4,7 +4,8 @@ Source: the NBA's official injury report, published hourly; the file for hour HH
 For a game on day D we read only the last report of day D-1 (8:30 PM). If it already lists the team's
 game on D, we use those rows. If not, we carry forward the team's statuses from its most recent game
 before D, which were already announced. Nothing published on game day is used.
-If the evening-before report is missing (the archive stops on Dec 21, 2025), the game is marked unknown.
+After Dec 21, 2025 the NBA's own addresses stop working, so the latest report of the evening comes from a
+research archive of the original PDFs (see archive_reports). If no report exists, the game is marked unknown.
 Needs `pdftotext` (poppler). Writes data/injuries.json: {game_id: {team: {"First Last": status}}}.
 """
 import json, re, pathlib, subprocess, tempfile, urllib.request, concurrent.futures as cf
@@ -12,7 +13,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from common import UA
 
-SEASONS = ("2024-25", "2025-26")
+SEASONS = ("2021-22", "2022-23", "2023-24", "2024-25", "2025-26")
 ET = ZoneInfo("America/New_York")
 CACHE = pathlib.Path("data/injury_reports")
 URL = "https://ak-static.cms.nba.com/referee/injury/Injury-Report_{day}_{hh}.pdf"
@@ -81,6 +82,47 @@ def evening_report(day):
     return None
 
 
+ARCHIVE_ZIP = pathlib.Path("data/third_party/nba-official-reports-2026.zip")
+ARCHIVE_MAP = pathlib.Path("data/third_party/map_2026.json")
+NAME_RE = re.compile(r"Injury-Report_(\d{4}-\d{2}-\d{2})_(\d{2})(?:_(\d{2}))?(AM|PM)\.pdf")
+
+
+def published_minutes(hh, mm, ampm):
+    """Minutes after midnight ET. Hourly files (old naming, '08PM') go up at HH:30;
+    the quarter-hour files used from late December 2025 ('06_45PM') at the time in the name."""
+    h = int(hh) % 12 + (12 if ampm == "PM" else 0)
+    return h * 60 + (int(mm) if mm is not None else 30)
+
+
+def archive_reports():
+    """The latest report published each day, from a research archive of the NBA's original PDFs
+    (github.com/niksmdmarketing/NFLFutures, release 'nba-official-reports'). It fills the period after
+    Dec 21, 2025, when the NBA's own addresses stop working. Checked in WRITEUP: every file matches its
+    sha256, and the 30 files that overlap with reports we downloaded from the NBA parse identically."""
+    if not (ARCHIVE_ZIP.exists() and ARCHIVE_MAP.exists()):
+        return {}
+    import zipfile
+    z, mapping, latest = zipfile.ZipFile(ARCHIVE_ZIP), json.loads(ARCHIVE_MAP.read_text()), {}
+    for fn, info in mapping.items():
+        m = NAME_RE.match(fn)
+        if not m:
+            continue
+        day, minutes = m.group(1), published_minutes(m.group(2), m.group(3), m.group(4))
+        if day not in latest or minutes > latest[day][0]:
+            latest[day] = (minutes, info["sha256"], fn)
+    out = {}
+    for day, (minutes, sha, fn) in latest.items():
+        f = CACHE / f"archive_{day}.json"
+        if not f.exists():
+            with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp:
+                tmp.write(z.read(sha + ".pdf"))
+                tmp.flush()
+                text = subprocess.run(["pdftotext", "-layout", tmp.name, "-"], capture_output=True, text=True).stdout
+            f.write_text(json.dumps({"published": f"{day} {fn}", "minutes": minutes, "rows": parse(text)}))
+        out[day] = json.loads(f.read_text())
+    return out
+
+
 def local_day(g):
     return datetime.fromisoformat(g["date"].replace("Z", "+00:00")).astimezone(ET).date()
 
@@ -92,6 +134,11 @@ if __name__ == "__main__":
     eves = sorted({(local_day(g) - timedelta(days=1)).isoformat() for g in games})
     with cf.ThreadPoolExecutor(6) as ex:
         reports = dict(zip(eves, ex.map(evening_report, eves)))
+    archive = archive_reports()
+    for day in eves:  # use whichever report went up latest that evening (official 8:30 PM = 1230 minutes)
+        a = archive.get(day)
+        if a and (reports.get(day) is None or a["minutes"] > 20 * 60 + 30):
+            reports[day] = a
     result, last_known, direct, carried, none = {}, {}, 0, 0, 0
     for g in sorted(games, key=lambda g: g["date"]):
         d = local_day(g)

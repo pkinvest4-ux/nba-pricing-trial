@@ -41,7 +41,9 @@ def pull(gid):
 
 if __name__ == "__main__":
     games = [json.loads(l) for l in open("data/games.jsonl")]
+    path = pathlib.Path("data/espn_odds.json")
+    out = json.loads(path.read_text()) if path.exists() else {}  # keep what is already downloaded
     with cf.ThreadPoolExecutor(8) as ex:
-        out = dict(ex.map(pull, [g["id"] for g in games]))
-    pathlib.Path("data/espn_odds.json").write_text(json.dumps(out))
+        out.update(dict(ex.map(pull, [g["id"] for g in games if g["id"] not in out])))
+    path.write_text(json.dumps(out))
     print(len(out), "games,", sum(not v for v in out.values()), "without odds")

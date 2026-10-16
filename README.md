@@ -14,6 +14,9 @@ Python 3.10 or newer, standard library only. `pdftotext` (poppler) reads the inj
 ```
 
 The first run downloads everything (ESPN and the NBA's injury reports) into `data/` and caches it.
+The 2025-26 injury reports after Dec 21 come from `nba-official-reports-2026.zip` and
+`reparse_v2_2026_reports.json` in github.com/niksmdmarketing/NFLFutures (release `nba-official-reports`),
+saved under `data/third_party/`.
 
 ## Files
 
@@ -22,7 +25,8 @@ The first run downloads everything (ESPN and the NBA's injury reports) into `dat
 | `fetch_games.py` | Every regular-season game and score, 2018-19 to 2025-26 (ESPN) |
 | `fetch_espn_odds.py` | Each book's pre-game open and close, spread and moneyline (ESPN) |
 | `fetch_boxscores.py` | Player minutes and Game Score, 2023-24 to 2025-26 (ESPN) |
-| `fetch_injuries.py` | The NBA's official injury report as of 8:30 PM the evening before each game |
+| `fetch_injuries.py` | The NBA's official injury report as it stood at the end of the evening before each game; after Dec 21, 2025 from a research archive of the original PDFs (checked, see DETAILS) |
+| `walkforward.py` | For each season 2016-17 to 2025-26: tune on the season before, grade once |
 | `model.py` | Spread model: team and player ratings, improvements, tuning, grading, win probability |
 | `totals.py` | Over/under model: offence and defence ratings, graded against the closing total |
 | `explain.py` | Shows how one game was priced, piece by piece: `python3 explain.py WSH DET 2025-11-10` |

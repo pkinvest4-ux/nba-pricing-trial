@@ -66,13 +66,21 @@ def load():
                 g["close_prob"] = no_vig(rec.get("close_ml_home"), rec.get("close_ml_away"))
                 g["key_book"] = b
                 break
-        # What the model may LEARN from once a game is over: the key book's close, or for older
-        # seasons without one, ESPN's consensus or the median of the books it lists.
-        g["learn_close"] = g["close"]
-        if g["learn_close"] is None:
+        # Older seasons have no labelled pre-game close. For the walk-forward test they are graded
+        # against Pinnacle's line where ESPN lists it, else ESPN's consensus, else the books' median.
+        if g["close"] is None:
+            pin = next((clean(r.get("spread")) for name, r in books.items() if "pinnacle" in name.lower()
+                        and clean(r.get("spread")) is not None), None)
             cons = clean((books.get("consensus") or {}).get("spread"))
-            others = [clean(r.get("spread")) for r in books.values() if clean(r.get("spread")) is not None]
-            g["learn_close"] = cons if cons is not None else (st.median(others) if others else None)
+            others = [clean(r.get("spread")) for name, r in books.items()
+                      if clean(r.get("spread")) is not None and name != "Opening"]
+            for line, source in ((pin, "Pinnacle"), (cons, "ESPN consensus"),
+                                 (st.median(others) if others else None, "median of books")):
+                if line is not None:
+                    g["close"], g["key_book"] = line, source
+                    break
+        # What the model may LEARN from once a game is over: the same line.
+        g["learn_close"] = g["close"]
         g["margin"] = g["home_pts"] - g["away_pts"]
     for season in (TUNE, TEST):
         sg = [g for g in games if g["season"] == season]
@@ -379,26 +387,27 @@ def gaps(games, preds, season, line="close", only=None):
             if g["season"] == season and g[line] is not None and (only is None or only(g))]
 
 
-def tune(games, grid):
-    return min(((st.mean(gaps(games, run(games, **p), TUNE)), p) for p in grid), key=lambda x: x[0])
+def tune(games, grid, season=None):
+    season = season or TUNE
+    return min(((st.mean(gaps(games, run(games, **p), season)), p) for p in grid), key=lambda x: x[0])
 
 
-def tuned_models(games):
+def tuned_models(games, season=None):
     """Each step adds one idea; every setting is chosen on the tuning season only."""
     grid = [dict(k=k, hca=h, carry=c) for k in (0.01, 0.02, 0.03, 0.04, 0.05, 0.07)
             for h in (1.5, 2.0, 2.5, 3.0, 3.5) for c in (0.4, 0.55, 0.7, 0.85)]
-    _, base = tune(games, grid)
-    _, mkt = tune(games, [dict(base, k_market=x) for x in (0.05, 0.1, 0.15, 0.2, 0.3, 0.4)])
-    _, rest = tune(games, [dict(mkt, b2b=x) for x in (0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0)])
-    _, injp = tune(games, [dict(rest, inj=x) for x in (0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5)])
+    _, base = tune(games, grid, season)
+    _, mkt = tune(games, [dict(base, k_market=x) for x in (0.05, 0.1, 0.15, 0.2, 0.3, 0.4)], season)
+    _, rest = tune(games, [dict(mkt, b2b=x) for x in (0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0)], season)
+    _, injp = tune(games, [dict(rest, inj=x) for x in (0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5)], season)
     _, plyr = tune(games, [dict(injp, roster=w, k=k) for w in (0.02, 0.03, 0.05, 0.07, 0.1)
-                           for k in (0.015, 0.02, 0.025, 0.03)])
+                           for k in (0.015, 0.02, 0.025, 0.03)], season)
     # Full player ratings: each player learns how much he adds per 48 minutes, mostly from closing
     # lines; team strength comes from the expected lineup. Grid around the values experiment_players.py
     # found on 2024-25 (confirmed there to depend on the injury report; see DETAILS).
     _, full = tune(games, [dict(plyr, p_w=0.75, p_carry=1.0, p_k=0.001, p_mkt=pm, k_market=km, k=k, inj=i)
                            for pm in (0.015, 0.02, 0.025) for km in (0.1, 0.15) for k in (0.01, 0.02)
-                           for i in (0.1, 0.15)])
+                           for i in (0.1, 0.15)], season)
     return {"baseline": base, "+ past closes": mkt, "+ back-to-backs": rest, "+ injuries": injp,
             "+ box-score players": plyr, "+ player ratings": full}
 
