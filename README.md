@@ -6,6 +6,7 @@ pre-game closing line.
 - **[WRITEUP.md](WRITEUP.md)**: the one-page summary.
 - **[HOW_IT_WORKS.md](HOW_IT_WORKS.md)**: a walk through the code, in the order a game gets priced.
 - **[DETAILS.md](DETAILS.md)**: every number, season by season.
+- **[results_by_game.csv](results_by_game.csv)**: every game of 2024-25 and 2025-26 in a spreadsheet: how each number was built, the close and the result. [results_summary.csv](results_summary.csv) has the totals.
 
 ## Run it
 
@@ -34,9 +35,14 @@ on its `market-data` branch), saved under `data/third_party/`.
 | `totals.py` | The over/under model |
 | `walkforward.py` | Tune on one season, grade the next, for every season 2016-17 to 2025-26 |
 | `explain.py` | Show how one game's number was built |
+| `export_results.py` | Write the spreadsheets: `results_by_game.csv` (every game of 2024-25 and 2025-26) and `results_summary.csv` |
+| `pooled.py` | Experiment: tune on several past seasons at once (did not beat the final model) |
+| `player_values.py` | Experiment: value players by plus-minus, points, win shares or BPM instead of Game Score (none beat it) |
 | `fetch_games.py` | Every regular-season game and score, 2014-15 to 2025-26 (ESPN) |
 | `fetch_espn_odds.py` | Each book's pre-game open and close: spread, total and moneyline (ESPN) |
 | `fetch_boxscores.py` | Player minutes and Game Score for every game (ESPN) |
+| `fetch_plusminus.py` | Points and plus-minus for every player, 2022-23 to 2025-26 (ESPN) |
+| `fetch_winshares.py` | Each player's season win shares and BPM (Basketball-Reference) |
 | `fetch_injuries.py` | The NBA's injury report as it stood at the end of the evening before each game |
 | `common.py` | Web requests and team codes shared by the fetch scripts |
 

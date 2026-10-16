@@ -1,0 +1,3 @@
+season,games,spread: avg points off the close,within 1 point,within 2 points,4+ points off,avg lean (model minus close),model higher on home team,model miss vs result,close miss vs result,model closer to result,total: avg points off the close
+2024-25 (tuning),1230,1.88,37%,64%,10%,+0.08,51%,10.76,10.52,45%,2.51
+2025-26 (test),1231,1.99,34%,61%,11%,+0.22,55%,11.13,10.88,46%,2.44
