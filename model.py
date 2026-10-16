@@ -77,9 +77,10 @@ def lineup_minutes(player, lineup):
 # ---------- choosing the settings ----------
 
 def gaps(games, preds, season, line="close", only=None):
-    """Points between our number and the line, for every graded game in a season."""
+    """Points between our number and the line, for every graded game in a season (or a list of seasons)."""
+    seasons = {season} if isinstance(season, str) else set(season)
     return [abs(p + g[line]) for g, p in zip(games, preds)
-            if g["season"] == season and g[line] is not None and (only is None or only(g))]
+            if g["season"] in seasons and g[line] is not None and (only is None or only(g))]
 
 
 def tune(games, grid, season=None):
