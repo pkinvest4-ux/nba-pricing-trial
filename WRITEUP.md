@@ -7,9 +7,8 @@ report. It walks forward one day at a time: it prices a day's games, then learns
 closing lines. Nothing from game day is used; injuries come from the last report of the evening before.
 
 **The data.**
-- **Closing lines: ESPN's recorded pre-game closes.** Pinnacle's history isn't available for free, and
-  ESPN records each book's open and close before tip-off and keeps in-game odds separate, so its close
-  is a true pre-game number. That is ESPN BET through 2024-25 and DraftKings for most of 2025-26, after
+- **Closing lines: ESPN's recorded pre-game closes.** ESPN records each book's open and close before
+  tip-off and keeps in-game odds separate, so its close is a true pre-game number. That is ESPN BET through 2024-25 and DraftKings for most of 2025-26, after
   ESPN changed partners. Seasons before 2023-24 use ESPN's consensus line, the best it has for them.
 - **Injuries: the NBA's official injury report** as it stood at the end of the evening before each
   game. After Dec 21, 2025 the NBA's own addresses stop working, so those reports come from a research
