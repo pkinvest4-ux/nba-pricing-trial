@@ -102,3 +102,19 @@ box-score player values (`ffbb83d`, 2.10) and with player ratings (`a6fa830`, 2.
 chosen on 2024-25 first. The ten-season run (`f2b6ce7`) is the cleaner evidence, since every season is
 graded with settings chosen only on earlier data. The figures above use the final data (injury reports
 for nearly all of 2025-26), which is why 2025-26 reads 1.99 rather than 2.05.
+
+## Two things tried that did not beat the final model
+
+Both were frozen in git before 2025-26 was graded, and both kept the rule that 2025-26 chooses nothing.
+
+- **Tuning on more seasons (`pooled.py`, `8cc96df`).** Choosing the window on 2024-25: tuned on the
+  season before 1.964, on the 3 before 1.974, on all 8 before 1.955 (a tie). Moving the all-seasons
+  window forward and grading 2025-26 once gave 2.08, against 1.99 tuned on 2024-25 alone. Older seasons
+  pull home court up (2.5 points) and the back-to-back penalty down (1.5), toward an older NBA.
+- **Other ways to value a missing player (`player_values.py`, `8964ed8`).** In place of Game Score per
+  minute, on 2024-25: points per minute 1.884, last season's Box Plus/Minus 1.885, Game Score plus
+  plus-minus 1.887, last season's win shares per 48 minutes 1.899, plus-minus per minute over the last
+  40 games 1.964; Game Score 1.878. None beat Game Score by a real margin on 2024-25, so Game Score
+  stays. On 2025-26: Game Score 1.994, points 1.982 (a difference the rule says to treat as noise).
+  Plus-minus and points come from ESPN box scores from 2022-23; win shares and Box Plus/Minus from
+  Basketball-Reference, always last season's.
