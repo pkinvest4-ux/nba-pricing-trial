@@ -115,7 +115,7 @@ def next_season_ok(key, games):
 
 if __name__ == "__main__":
     games = load()
-    ws = json.load(open("data/winshares.json"))
+    ws = {s: {norm(n): v for n, v in p.items()} for s, p in json.load(open("data/winshares.json")).items()}
     rows = missing_values(games)
     final = tuned_models(games)["+ player ratings"]
     ways = {"game score": [dict()],
