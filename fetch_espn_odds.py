@@ -1,7 +1,7 @@
 """Pre-game opening and closing lines per book from ESPN, for every game.
 
 ESPN keeps in-game odds under separate providers named '... - Live Odds', so a book's 'close' here is its
-last PRE-GAME line. (SportsbookReview's 'latest' line turned out to include in-game odds; see WRITEUP.)
+last PRE-GAME line.
 Writes data/espn_odds.json: {game_id: {book: {open_spread, close_spread, open_total, close_total, ...}}}
 Spreads are the home team's line, negative = home favoured."""
 import json, pathlib, concurrent.futures as cf

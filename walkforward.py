@@ -3,21 +3,23 @@ season once. Shows whether the model's design holds up year after year, not just
 Usage: python3 walkforward.py [first season] (default 2016-17). Runs seasons in parallel."""
 import sys, statistics as st, collections
 from multiprocessing import Pool
-import model
+from data import load
+from model import tuned_models, gaps, run
+from evaluate import bootstrap
 
 SEASONS = ["2015-16", "2016-17", "2017-18", "2018-19", "2019-20", "2020-21", "2021-22", "2022-23",
            "2023-24", "2024-25", "2025-26"]
 
 
 def one(target):
-    games = model.load()
+    games = load()
     prev = SEASONS[SEASONS.index(target) - 1]
-    models = model.tuned_models(games, season=prev)
+    models = tuned_models(games, season=prev)
     names = list(models)
-    g = {n: model.gaps(games, model.run(games, **p), target) for n, p in models.items()}
+    g = {n: gaps(games, run(games, **p), target) for n, p in models.items()}
     steps = []
     for a, b in zip(names, names[1:]):
-        m, lo, hi = model.bootstrap(g[a], g[b], n=4000)
+        m, lo, hi = bootstrap(g[a], g[b], n=4000)
         steps.append((b, m, lo, hi))
     src = collections.Counter(x["key_book"] for x in games if x["season"] == target and x["close"] is not None)
     return target, prev, len(g["baseline"]), dict(src), {n: st.mean(v) for n, v in g.items()}, steps

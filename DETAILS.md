@@ -1,143 +1,104 @@
-# Full notes: pricing NBA games the night before
+# Full notes
 
-**Result:** on the 2025-26 season (1,230 games, never used to choose a setting), my spreads were
-**2.05 points** from the pre-game closing line on average, down from **2.99** for a ratings-only
-model. On the 429 games where the night-before injury report exists, they were **1.87** points off.
-The same approach prices totals **2.49 points** from the closing total. Every improvement holds up on
-the unseen season, and the close is still the better forecast of the final score, as I would expect.
+Every number behind [WRITEUP.md](WRITEUP.md). For how the code works, see [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
+All figures are points between the model's number and the line, averaged over games, unless stated.
 
-## What the model knows, and when
+## Data
 
-Every team has a rating in points, and every player a value from his own box scores (Game Score per
-minute above a bench player, times his usual minutes). Predicted home margin = home rating minus away
-rating, plus home-court advantage, plus the gap in strength between the players expected to be
-available, plus two things known the night before: a team on the second night of a back-to-back, and
-regulars listed Out, Doubtful or Questionable on the NBA's injury report. Because players carry their
-own value, the team rating only has to learn what the players do not explain.
+- **Answer key.** One book's pre-game close per season, as recorded by ESPN, which keeps in-game odds
+  under separate "Live Odds" entries: ESPN BET for 2023-24 and 2024-25; DraftKings for 971 games of
+  2025-26 and ESPN BET for the 259 early-season games before ESPN changed partners (one game had
+  neither, and uses the median of the books ESPN lists). Seasons before 2023-24 have no labelled close
+  in ESPN's data and use the best line ESPN lists, almost always its consensus line.
+- **Injuries.** The NBA's official injury report as it stood at the end of the evening before each game,
+  for 2021-22 to 2025-26. From Dec 22, 2025 the NBA published quarter-hour files whose addresses no
+  longer work; those reports come from a research archive of the original PDFs. Checks: all 732 files
+  match their sha256 checksums, and the 30 files that overlap with reports downloaded from the NBA parse
+  identically. 1,201 of 1,231 games in 2025-26 have a night-before report.
+- **Games, odds and box scores** from ESPN, 2014-15 to 2025-26 (14,443 games). All-Star and exhibition
+  games are removed. Spreads over 30 points and totals outside 170 to 280 are treated as bad data.
 
-The model walks through seasons one day at a time. It prices every game on a day first, then learns
-from that day's results and closing lines. Nothing from game day is used: injury information is the
-NBA's report as it stood at 8:30 PM the evening before.
+## Final settings (chosen on 2024-25)
 
-## The answer key, and the data problems behind it
-
-You asked for Pinnacle's close. Its history is only sold commercially, so I looked for free sources.
-
-- **SportsbookReview** has opening and "latest" lines from five to nine books per game. Checking it
-  against ESPN, I found its "latest" line is sometimes an in-game line: for Jazz at Nuggets on
-  Dec 22, 2025, two books show Denver -23.5 and -24.5 against a -12.5 pre-game close, in a game
-  Denver won by 23. Grading against that would leak the result into the answer key, so I dropped it.
-- **ESPN** records each book's pre-game open and close, and keeps in-game odds under a separate
-  "Live Odds" label. Its closes moved toward the result at a normal rate, with no sign of live lines.
-- So the answer key is **one book's pre-game close as recorded by ESPN**: ESPN BET for 2024-25, and
-  DraftKings for 2025-26 (971 games), falling back to ESPN BET for the 259 early-season games before
-  ESPN changed partners.
-- **The NBA's injury report archive stops on Dec 21, 2025.** Later games get no injury adjustment,
-  which is why I report the 429 games that have it separately.
-- Other fixes: a sanity rule drops "spreads" over 30 and totals outside 170 to 280 (ESPN once stored
-  prices like -110 in those fields), All-Star games are removed, and traded players stop counting
-  for their old team.
-
-## How I tested it
-
-I chose every setting on 2024-25, checked new ideas on 2023-24 as well, and froze the code in git
-before each run on 2025-26. Each gain is checked by comparing two models on the same games and
-resampling them 10,000 times: if the gain shows up in 95% of resamples, it is not luck.
-
-**To be transparent:** the spread model was run on 2025-26 three times: a first version (commit
-`dedd7fd`, 2.14 points), with box-score player values (commit `ffbb83d`, 2.10), and with full player
-ratings (commit `a6fa830`, 2.05). Each addition was chosen on 2024-25 before its run. Full player
-ratings gained +0.065 on 2024-25 but only +0.007 on 2023-24, which has no injury reports; with the
-reports switched off, 2024-25's gain also fell to +0.014, so the value is in using the report to set
-the expected lineup. The totals model was run once.
-
-## Results on 2025-26
-
-| Spread model | Points off the close (1,230 games) | With injury report (429 games) |
+| Setting | Value | Meaning |
 |---|---|---|
-| Ratings from results only | 2.99 | 2.88 |
-| + learn from past closing lines | 2.44 | 2.42 |
-| + second night of a back-to-back | 2.21 | 2.15 |
-| + night-before injury report | 2.14 | **1.92** |
-| + box-score player values | 2.10 | 1.93 |
-| + full player ratings with expected lineups | **2.05** | **1.87** |
+| `k` | 0.01 | team ratings move 1% of the way toward each result |
+| `k_market` | 0.1 | and 10% of the way toward each closing line |
+| `hca` | 2.0 | home-court advantage, points |
+| `carry` | 0.7 | share of a team rating kept into a new season |
+| `b2b` | 2.0 | points given up on the second night of a back-to-back |
+| `inj` | 0.1 | weight on the gap in missing rotation value |
+| `roster` | 0.05 | weight on the gap in available players' box-score value |
+| `p_w`, `p_mkt`, `p_k`, `p_carry` | 0.75, 0.015, 0.001, 1.0 | player ratings: weight, learning from closes, from results, carry-over |
 
-- **Past closes:** +0.55 points (95% range 0.43 to 0.67). The market knows things a box score does not.
-- **Back-to-backs:** worth about 2 points to the rested team. +0.23 (0.17 to 0.29).
-- **Injury report:** +0.22 where it exists (0.11 to 0.34), +0.08 over the full season.
-- **Box-score player values:** +0.04 (0.02 to 0.05), the same gain as on 2024-25 and 2023-24.
-- **Full player ratings:** +0.05 (0.02 to 0.08). Each player's points per 48 minutes is learned mostly
-  from closing lines (learning from results alone barely helped). On the injury-report games: +0.06
-  (-0.01 to 0.13), not statistically clear on 429 games.
-- **Against the final score:** the close misses by 10.88 points, my model by 11.17.
+## Spreads, 2025-26 (test season)
 
-**Win probability**, as a second number: 5.2 percentage points from the no-vig closing price on
-average; log loss 0.587 against the close's 0.570 and a coin flip's 0.693. Calibration is good in the
-middle (when I said 60 to 80%, the home team won 74%) and a little overconfident at the extremes.
-The tuning seasons did not support widening the curve, so I did not adjust it to fit the test.
+| Step | Off the close | Gain (95% range) | Off the open |
+|---|---|---|---|
+| Ratings from results only | 3.00 | | 2.64 |
+| + learn from past closing lines | 2.44 | +0.55 (0.43 to 0.67) | 2.11 |
+| + back-to-backs | 2.21 | +0.23 (0.17 to 0.29) | 2.00 |
+| + night-before injury report | 2.02 | +0.19 (0.13 to 0.26) | 1.87 |
+| + box-score player values | 2.00 | +0.02 (0.00 to 0.04) | 1.84 |
+| + player ratings | **1.99** | +0.00 (-0.04 to 0.05) | **1.77** |
 
-## Totals (over/under)
+Against the actual margin: model 11.13 points off, close 10.88 (close better by 0.25, 0.11 to 0.39).
+On the 1,201 games with a night-before report: 1.94 off the close, injuries +0.20 (0.13 to 0.26).
 
-Each team gets an offence and a defence rating, around a league scoring level that drifts over time.
+**2024-25 (tuning season):** 2.80 from results only, 1.88 for the full model; the close beat the model
+on actual margins by 0.24.
 
-| Totals model | Points off the closing total (1,230 games) |
-|---|---|
-| Ratings from results only | 3.59 |
-| + learn from past closing totals | 2.58 |
-| + back-to-backs (tired teams score about 0.5 less) | 2.55 |
-| + injury report (missing regulars lower their team's points) | **2.49** |
+## Win probability, 2025-26
 
-Every step is real on 2025-26, and 2.49 matches the tuning season exactly. The close still beats the
-model on the real totals (14.56 against 14.79 points off).
+Actual margins land around the prediction with a spread of 12.9 points (measured on earlier seasons),
+which turns each margin into a win probability. Graded against the no-vig closing moneyline:
 
-## What did not work
+- Average gap to the closing price: 5.0 percentage points.
+- Log loss: model 0.585, close 0.570, coin flip 0.693 (close better by 0.015, 0.007 to 0.024).
+- Calibration: when the model said 20 to 40%, the home team won 32%; 40 to 60%, 48%; 60 to 80%, 72%;
+  80 to 100%, 84%.
 
-Each was chosen on 2024-25, checked on 2023-24, and dropped because the gain was noise: players
-returning from injury, three games in four nights, rest-day differences, time zones crossed, capping
-blowout margins, faster learning early in the season, a separate home-court edge for each team, and
-"regulars who sat out the previous game". The common reason: the model already learns from every past
-closing line, and the market had priced those things in. Back-to-backs and tomorrow's injury report
-are the schedule and news effects strong enough to add something on top.
+## Totals
 
-## What I would do next
+Offence and defence ratings around a drifting league average (settings: `k` 0.05, `carry` 0.5, league
+drift 0.005, `k_market` 0.5, back-to-back -0.5 points, injury weight -1).
 
-Find day-before injury news for 2026 (another archive, or saving the report each night going
-forward), project each player's minutes instead of using his average, and add pace to the totals.
+| Step | 2024-25 (tuning) | 2025-26 (test) | Gain on 2025-26 (95% range) |
+|---|---|---|---|
+| Ratings from results only | 3.49 | 3.59 | |
+| + learn from past closing totals | 2.66 | 2.58 | +1.01 (0.87 to 1.15) |
+| + back-to-backs | 2.64 | 2.55 | +0.03 (0.01 to 0.05) |
+| + night-before injury report | 2.51 | **2.44** | +0.12 (0.07 to 0.17) |
 
+Against the actual total on 2025-26: model 14.77 points off, close 14.56 (close better by 0.21).
 
-## Update: ten-season walk-forward, and the injury archive
+## Ten seasons, each tuned on the season before (`walkforward.py`)
 
-This section supersedes the 2025-26 numbers above.
+| Season | Tuned on | Results only | + closes | + back-to-backs | + injuries | + box-score players | + player ratings |
+|---|---|---|---|---|---|---|---|
+| 2016-17 | 2015-16 | 2.02 | 1.57 | 1.51 | 1.51 | 1.45 | 1.44 |
+| 2017-18 | 2016-17 | 2.60 | 1.91 | 1.84 | 1.84 | 1.81 | 1.81 |
+| 2018-19 | 2017-18 | 2.45 | 1.93 | 1.74 | 1.74 | 1.65 | 1.64 |
+| 2019-20 | 2018-19 | 2.88 | 2.33 | 2.14 | 2.14 | 2.11 | 2.10 |
+| 2020-21 | 2019-20 | 3.09 | 2.74 | 2.54 | 2.54 | 2.45 | 2.43 |
+| 2021-22 | 2020-21 | 2.64 | 2.27 | 2.10 | 2.10 | 2.03 | 1.79 |
+| 2022-23 | 2021-22 | 3.04 | 2.42 | 2.24 | 1.97 | 1.95 | 1.89 |
+| 2023-24 | 2022-23 | 2.81 | 2.34 | 2.08 | 1.89 | 1.80 | 1.79 |
+| 2024-25 | 2023-24 | 2.85 | 2.43 | 2.25 | 2.04 | 2.00 | 1.96 |
+| 2025-26 | 2024-25 | 3.00 | 2.44 | 2.21 | 2.02 | 2.00 | 1.99 |
 
-**Walk-forward.** For each season from 2016-17 to 2025-26, every setting was chosen on the season
-before it and the season was graded once (`walkforward.py`, code frozen at `f2b6ce7` before the run).
+Real gains (95% range above zero): past closes 10 of 10 seasons; back-to-backs 10 of 10; box-score
+players 9 of 10; player ratings 4 of 10, never negative. Injury reports exist from 2021-22, so injuries
+can be learned from 2022-23 on, and were a real gain in all 4 of those seasons (in 2021-22 the tuning
+season had no reports, so its weight was zero). Player ratings mattered most where the injury step
+could not help: 2021-22, +0.24. Before 2023-24 the line is ESPN's consensus rather than a labelled
+close, so compare steps within a season rather than levels across seasons.
 
-| Season | Tuned on | Ratings only | + closes | + back-to-backs | + injuries | + box-score players | + player ratings | Graded against |
-|---|---|---|---|---|---|---|---|---|
-| 2016-17 | 2015-16 | 2.02 | 1.57 | 1.51 | 1.51 | 1.45 | 1.44 | ESPN consensus |
-| 2017-18 | 2016-17 | 2.60 | 1.91 | 1.84 | 1.84 | 1.81 | 1.81 | ESPN consensus |
-| 2018-19 | 2017-18 | 2.45 | 1.93 | 1.74 | 1.74 | 1.65 | 1.64 | ESPN consensus |
-| 2019-20 | 2018-19 | 2.88 | 2.33 | 2.14 | 2.14 | 2.11 | 2.10 | ESPN consensus |
-| 2020-21 | 2019-20 | 3.09 | 2.74 | 2.54 | 2.54 | 2.45 | 2.43 | ESPN consensus |
-| 2021-22 | 2020-21 | 2.64 | 2.27 | 2.10 | 2.10 | 2.03 | 1.79 | ESPN consensus |
-| 2022-23 | 2021-22 | 3.04 | 2.42 | 2.24 | 1.97 | 1.95 | 1.89 | ESPN consensus |
-| 2023-24 | 2022-23 | 2.81 | 2.34 | 2.08 | 1.89 | 1.80 | 1.79 | ESPN BET close |
-| 2024-25 | 2023-24 | 2.85 | 2.43 | 2.25 | 2.04 | 2.00 | 1.96 | ESPN BET close |
-| 2025-26 | 2024-25 | 3.00 | 2.44 | 2.21 | 2.02 | 2.00 | 1.99 | DraftKings / ESPN BET close |
+## Order of work
 
-Real gains (95% range above zero): past closes 10 of 10 seasons, back-to-backs 10 of 10, box-score
-player values 9 of 10, full player ratings 4 of 10 (never negative). Injuries were a real gain in all
-4 seasons whose tuning season had injury reports; in 2021-22 the tuning season (2020-21) had none, so
-the injury weight was set to zero. ESPN's consensus line before 2023-24 is not labelled as a close, so
-compare steps within a season rather than levels across eras.
-
-**Injury archive.** After Dec 21, 2025 the NBA moved to quarter-hour report files whose addresses no
-longer work. The reports for the rest of 2025-26 come from a research archive of the original PDFs
-(github.com/niksmdmarketing/NFLFutures, release `nba-official-reports`). Checks: all 732 files match
-their sha256; the 30 files that overlap with reports downloaded from the NBA parse identically. With it,
-1,201 of 1,231 games in 2025-26 have a night-before report (up from 430).
-
-**2025-26, final:** spreads 1.99 points off the close (injuries +0.19, 0.13 to 0.26, over the full
-season); win probability 5.0 points from the no-vig close, log loss 0.585 vs 0.570; totals 2.44 points
-off the closing total (injuries +0.12, 0.07 to 0.17). Close better on real margins by 0.25 (spreads)
-and 0.21 (totals).
+The code was frozen in git before each run on 2025-26. Before the ten-season run, the spread model was
+graded on 2025-26 three times as pieces were added: a first version (commit `dedd7fd`, 2.14), with
+box-score player values (`ffbb83d`, 2.10) and with player ratings (`a6fa830`, 2.05). Each addition was
+chosen on 2024-25 first. The ten-season run (`f2b6ce7`) is the cleaner evidence, since every season is
+graded with settings chosen only on earlier data. The figures above use the final data (injury reports
+for nearly all of 2025-26), which is why 2025-26 reads 1.99 rather than 2.05.

@@ -6,6 +6,6 @@ cd "$(dirname "$0")"
 [ -f data/espn_odds.json ] || python3 fetch_espn_odds.py
 [ -f data/boxscores.json ] || python3 fetch_boxscores.py
 [ -f data/injuries.json ] || python3 fetch_injuries.py
-python3 model.py "$@"
+python3 evaluate.py "$@"
 echo
 python3 totals.py "$@"

@@ -1,44 +1,49 @@
-# NBA pricing model (trial)
+# NBA pricing model
 
-Prices NBA games with what was known by the end of the day before, and grades the price against
-the pre-game closing line. The one-page summary is [WRITEUP.md](WRITEUP.md); the full notes are [DETAILS.md](DETAILS.md).
+Prices NBA games with what was known by the end of the day before, and grades the price against the
+pre-game closing line.
+
+- **[WRITEUP.md](WRITEUP.md)**: the one-page summary.
+- **[HOW_IT_WORKS.md](HOW_IT_WORKS.md)**: a walk through the code, in the order a game gets priced.
+- **[DETAILS.md](DETAILS.md)**: every number, season by season.
 
 ## Run it
 
-Python 3.10 or newer, standard library only. `pdftotext` (poppler) reads the injury report PDFs:
-`brew install poppler` on a Mac.
+Python 3.10 or newer, standard library only. `pdftotext` (from poppler) reads the injury report
+PDFs: `brew install poppler` on a Mac.
 
 ```bash
-./run.sh            # spreads and totals on the tuning season (2024-25)
-./run.sh --test     # spreads and totals on the test season (2025-26)
+./run.sh            # spreads and totals, graded on the tuning season (2024-25)
+./run.sh --test     # spreads and totals, graded on the test season (2025-26)
+python3 walkforward.py               # each season 2016-17 to 2025-26, tuned on the one before
+python3 explain.py WSH DET 2025-11-10 # how one game was priced, piece by piece
 ```
 
-The first run downloads everything (ESPN and the NBA's injury reports) into `data/` and caches it.
-The 2025-26 injury reports after Dec 21 come from `nba-official-reports-2026.zip` and
-`reparse_v2_2026_reports.json` in github.com/niksmdmarketing/NFLFutures (release `nba-official-reports`),
-saved under `data/third_party/`.
+The first run downloads everything into `data/` and caches it. The 2025-26 injury reports after
+Dec 21, 2025 come from a research archive of the NBA's original PDFs (github.com/niksmdmarketing/NFLFutures,
+release `nba-official-reports`: `nba-official-reports-2026.zip` and `research/nba_pregame/reparse_v2_2026_reports.json`
+on its `market-data` branch), saved under `data/third_party/`.
 
 ## Files
 
-| File | What it does |
+| File | Job |
 |---|---|
-| `fetch_games.py` | Every regular-season game and score, 2018-19 to 2025-26 (ESPN) |
-| `fetch_espn_odds.py` | Each book's pre-game open and close, spread and moneyline (ESPN) |
-| `fetch_boxscores.py` | Player minutes and Game Score, 2023-24 to 2025-26 (ESPN) |
-| `fetch_injuries.py` | The NBA's official injury report as it stood at the end of the evening before each game; after Dec 21, 2025 from a research archive of the original PDFs (checked, see DETAILS) |
-| `walkforward.py` | For each season 2016-17 to 2025-26: tune on the season before, grade once |
-| `model.py` | Spread model: team and player ratings, improvements, tuning, grading, win probability |
-| `totals.py` | Over/under model: offence and defence ratings, graded against the closing total |
-| `explain.py` | Shows how one game was priced, piece by piece: `python3 explain.py WSH DET 2025-11-10` |
-| `experiments.py`, `experiment_players.py` | Ideas tried on 2024-25 and 2023-24, and which were kept |
-| `check_lines.py` | Checks one source of closing lines against another (see DETAILS) |
-| `fetch_lines.py` | SportsbookReview lines: downloaded and checked, not used (in-game "latest" lines) |
+| `data.py` | Everything known the night before a game: the closing line, back-to-backs, injuries, player values, expected lineups |
+| `model.py` | The model: price each day's games, then learn from them; choose the settings |
+| `evaluate.py` | Grade each step against the close, check which gains are real, win probability |
+| `totals.py` | The over/under model |
+| `walkforward.py` | Tune on one season, grade the next, for every season 2016-17 to 2025-26 |
+| `explain.py` | Show how one game's number was built |
+| `fetch_games.py` | Every regular-season game and score, 2014-15 to 2025-26 (ESPN) |
+| `fetch_espn_odds.py` | Each book's pre-game open and close: spread, total and moneyline (ESPN) |
+| `fetch_boxscores.py` | Player minutes and Game Score for every game (ESPN) |
+| `fetch_injuries.py` | The NBA's injury report as it stood at the end of the evening before each game |
+| `common.py` | Web requests and team codes shared by the fetch scripts |
 
 ## Rules the code follows
 
-- Each day's games are priced before any of that day's results or lines are used.
-- Nothing from game day: injuries come from the report published the evening before.
-- Every setting is chosen on 2024-25. The code was frozen before each 2025-26 run (commits `dedd7fd`,
-  `ffbb83d` and `a6fa830`; see DETAILS for why there were three).
-- Grading uses one book's pre-game close per game, as recorded by ESPN.
-- Any "spread" over 30 points, or total outside 170 to 280, is bad data and dropped.
+- A day's games are priced before any of that day's results, box scores or lines are used.
+- Nothing from game day: injuries come from the last report of the evening before.
+- Every setting is chosen on an earlier season than the one being graded.
+- Each season is graded against one book's pre-game close, as recorded by ESPN.
+- Any spread over 30 points, or total outside 170 to 280, is bad data and dropped.

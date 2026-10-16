@@ -3,7 +3,7 @@ import json, time, urllib.request
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129 Safari/537.36"
 
-# One code per franchise. ESPN and SportsbookReview spell a few differently.
+# One code per franchise, whichever way a source spells it.
 ALIASES = {"GSW": "GS", "NOP": "NO", "SAS": "SA", "UTA": "UTAH", "NYK": "NY", "WAS": "WSH", "BRK": "BKN", "PHO": "PHX"}
 NBA = {"ATL", "BKN", "BOS", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GS", "HOU", "IND", "LAC", "LAL", "MEM",
        "MIA", "MIL", "MIN", "NO", "NY", "OKC", "ORL", "PHI", "PHX", "POR", "SA", "SAC", "TOR", "UTAH", "WSH"}
