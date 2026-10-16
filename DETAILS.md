@@ -103,3 +103,41 @@ are the schedule and news effects strong enough to add something on top.
 
 Find day-before injury news for 2026 (another archive, or saving the report each night going
 forward), project each player's minutes instead of using his average, and add pace to the totals.
+
+
+## Update: ten-season walk-forward, and the injury archive
+
+This section supersedes the 2025-26 numbers above.
+
+**Walk-forward.** For each season from 2016-17 to 2025-26, every setting was chosen on the season
+before it and the season was graded once (`walkforward.py`, code frozen at `f2b6ce7` before the run).
+
+| Season | Tuned on | Ratings only | + closes | + back-to-backs | + injuries | + box-score players | + player ratings | Graded against |
+|---|---|---|---|---|---|---|---|---|
+| 2016-17 | 2015-16 | 2.02 | 1.57 | 1.51 | 1.51 | 1.45 | 1.44 | ESPN consensus |
+| 2017-18 | 2016-17 | 2.60 | 1.91 | 1.84 | 1.84 | 1.81 | 1.81 | ESPN consensus |
+| 2018-19 | 2017-18 | 2.45 | 1.93 | 1.74 | 1.74 | 1.65 | 1.64 | ESPN consensus |
+| 2019-20 | 2018-19 | 2.88 | 2.33 | 2.14 | 2.14 | 2.11 | 2.10 | ESPN consensus |
+| 2020-21 | 2019-20 | 3.09 | 2.74 | 2.54 | 2.54 | 2.45 | 2.43 | ESPN consensus |
+| 2021-22 | 2020-21 | 2.64 | 2.27 | 2.10 | 2.10 | 2.03 | 1.79 | ESPN consensus |
+| 2022-23 | 2021-22 | 3.04 | 2.42 | 2.24 | 1.97 | 1.95 | 1.89 | ESPN consensus |
+| 2023-24 | 2022-23 | 2.81 | 2.34 | 2.08 | 1.89 | 1.80 | 1.79 | ESPN BET close |
+| 2024-25 | 2023-24 | 2.85 | 2.43 | 2.25 | 2.04 | 2.00 | 1.96 | ESPN BET close |
+| 2025-26 | 2024-25 | 3.00 | 2.44 | 2.21 | 2.02 | 2.00 | 1.99 | DraftKings / ESPN BET close |
+
+Real gains (95% range above zero): past closes 10 of 10 seasons, back-to-backs 10 of 10, box-score
+player values 9 of 10, full player ratings 4 of 10 (never negative). Injuries were a real gain in all
+4 seasons whose tuning season had injury reports; in 2021-22 the tuning season (2020-21) had none, so
+the injury weight was set to zero. ESPN's consensus line before 2023-24 is not labelled as a close, so
+compare steps within a season rather than levels across eras.
+
+**Injury archive.** After Dec 21, 2025 the NBA moved to quarter-hour report files whose addresses no
+longer work. The reports for the rest of 2025-26 come from a research archive of the original PDFs
+(github.com/niksmdmarketing/NFLFutures, release `nba-official-reports`). Checks: all 732 files match
+their sha256; the 30 files that overlap with reports downloaded from the NBA parse identically. With it,
+1,201 of 1,231 games in 2025-26 have a night-before report (up from 430).
+
+**2025-26, final:** spreads 1.99 points off the close (injuries +0.19, 0.13 to 0.26, over the full
+season); win probability 5.0 points from the no-vig close, log loss 0.585 vs 0.570; totals 2.44 points
+off the closing total (injuries +0.12, 0.07 to 0.17). Close better on real margins by 0.25 (spreads)
+and 0.21 (totals).
