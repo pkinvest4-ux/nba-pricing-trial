@@ -9,25 +9,31 @@ improvements, it's **1.99**.
 
 ## 1. The model
 
-I price each game the night before. The predicted home margin is the sum of six parts:
+I price each game the night before, walking through the schedule one day at a time: price the day's
+games, then learn from their results and closing lines before the next day.
 
-1. **Team ratings:** the gap between the two teams' ratings, in points.
-2. **Home court:** the same for every home team.
-3. **Back-to-backs:** points a team gives up on its second night in a row.
-4. **Injuries:** the value of the regulars listed out on the NBA's injury report the night before.
-5. **Box-score players:** the strength gap between the players expected to play.
-6. **Player ratings:** the gap between the two expected lineups, with each player rated in points.
+**Starting model.** Every team starts at 0. After each game, both teams' ratings move 1% of the way
+toward the actual result: if I had Detroit by 5 and they won by 15, Detroit goes up a little and its
+opponent goes down a little. The predicted margin is the rating gap plus 2 points of home court. Each
+new season, teams keep 70% of their rating, since rosters change. That's the 3.00.
 
-The model walks through the schedule one day at a time. It prices a day's games, then learns from
-their results and closing lines before moving on to the next day.
+**Improvements, one at a time:**
+
+1. **Learn from past closing lines.** Ratings also move toward each game's closing line, not just the
+   score. The market knows things a box score doesn't. (2.44)
+2. **Back-to-backs.** A team on its second night in a row gives up 2 points. (2.21)
+3. **Injury report.** Regulars listed out the night before cost their team their value. (2.02)
+4. **Box-score players.** The strength of the players expected to play. (2.00)
+5. **Player ratings.** Each player gets a rating learned from the closes, so the expected lineup
+   counts. (1.99)
 
 ## 2. The data
 
-- **Closing lines:** ESPN's recorded pre-game closes. That's ESPN BET through 2024-25 and DraftKings for
-  most of 2025-26. Seasons before 2023-24 use ESPN's consensus line.
+- **Closing lines:** ESPN's recorded pre-game closes: ESPN BET through 2024-25, DraftKings for most of
+  2025-26, and ESPN's consensus line before 2023-24.
 - **Injuries:** the NBA's official injury report as it stood at the end of the evening before each game.
-  Reports after Dec 21, 2025 come from a research archive of the original PDFs, which I checked against
-  my own NBA downloads.
+  Reports after Dec 21, 2025 come from a research archive of the original PDFs, checked against my own
+  NBA downloads.
 - **Results and player minutes:** ESPN box scores, back to 2014-15.
 
 ## 3. How I tested it
@@ -40,12 +46,12 @@ only count a gain as real if it holds in 95% of 10,000 resamples of the games.
 
 | Step (2025-26) | Off the close | Gain (95% range) | Real gain in the last 10 seasons |
 |---|---|---|---|
-| Starting model: team ratings and home court | 3.00 | | |
+| Starting model | 3.00 | | |
 | + learn from past closing lines | 2.44 | +0.55 (0.43 to 0.67) | 10 of 10 |
-| + second night of a back-to-back | 2.21 | +0.23 (0.17 to 0.29) | 10 of 10 |
-| + night-before injury report | 2.02 | +0.19 (0.13 to 0.26) | 4 of 4 with reports to learn from |
-| + box-score player values | 2.00 | +0.02 (0.00 to 0.04) | 9 of 10 |
-| + full player ratings | **1.99** | +0.00 (-0.04 to 0.05) | 4 of 10 |
+| + back-to-backs | 2.21 | +0.23 (0.17 to 0.29) | 10 of 10 |
+| + injury report | 2.02 | +0.19 (0.13 to 0.26) | 4 of 4 with reports to learn from |
+| + box-score players | 2.00 | +0.02 (0.00 to 0.04) | 9 of 10 |
+| + player ratings | **1.99** | +0.00 (-0.04 to 0.05) | 4 of 10 |
 
 - Learning from past closing lines is the biggest improvement, and it was real in every one of the ten
   seasons.
@@ -61,9 +67,8 @@ only count a gain as real if it holds in 95% of 10,000 resamples of the games.
 
 ## 6. Order of work
 
-Before the ten-season run, I graded 2025-26 three times as I added pieces (2.14, 2.10, 2.05). Each piece
-was chosen on 2024-25 first, with the code frozen in git before it was graded. The ten-season run is the
-cleaner test, since every season is graded with settings chosen only on earlier seasons.
+Before the ten-season run, I graded 2025-26 three times as I added pieces (2.14, 2.10, 2.05), each chosen
+on 2024-25 first with the code frozen in git. The ten-season run is the cleaner test.
 
 ## 7. Next
 
