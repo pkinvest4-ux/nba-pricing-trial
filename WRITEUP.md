@@ -55,7 +55,7 @@ only count a gain as real if it holds in 95% of 10,000 resamples of the games.
 
 - Learning from past closing lines is the biggest improvement, and it was real in every one of the ten
   seasons.
-- Across the ten seasons, the improvements beat the starting model by 0.6 to 1.1 points every year.
+- Across the ten seasons, the improvements beat the starting model by 0.6 to 1.2 points every year.
 - Player ratings added almost nothing on 2025-26. I kept them because they never made a season worse.
 - Against the final scores, the close still beats me: it's 10.88 points off on average, and I'm 11.13.
 
