@@ -35,7 +35,7 @@ All figures are points between the model's number and the line, averaged over ga
 
 | Step | Off the close | Gain (95% range) | Off the open |
 |---|---|---|---|
-| Ratings from results only | 3.00 | | 2.64 |
+| Starting model: team ratings and home court | 3.00 | | 2.64 |
 | + learn from past closing lines | 2.44 | +0.55 (0.43 to 0.67) | 2.11 |
 | + back-to-backs | 2.21 | +0.23 (0.17 to 0.29) | 2.00 |
 | + night-before injury report | 2.02 | +0.19 (0.13 to 0.26) | 1.87 |
@@ -45,7 +45,7 @@ All figures are points between the model's number and the line, averaged over ga
 Against the actual margin: model 11.13 points off, close 10.88 (close better by 0.25, 0.11 to 0.39).
 On the 1,201 games with a night-before report: 1.94 off the close, injuries +0.20 (0.13 to 0.26).
 
-**2024-25 (tuning season):** 2.80 from results only, 1.88 for the full model; the close beat the model
+**2024-25 (tuning season):** 2.80 for the starting model, 1.88 with the improvements; the close beat the model
 on actual margins by 0.24.
 
 ## Win probability, 2025-26
@@ -65,7 +65,7 @@ drift 0.005, `k_market` 0.5, back-to-back -0.5 points, injury weight -1).
 
 | Step | 2024-25 (tuning) | 2025-26 (test) | Gain on 2025-26 (95% range) |
 |---|---|---|---|
-| Ratings from results only | 3.49 | 3.59 | |
+| Starting model: ratings from results | 3.49 | 3.59 | |
 | + learn from past closing totals | 2.66 | 2.58 | +1.01 (0.87 to 1.15) |
 | + back-to-backs | 2.64 | 2.55 | +0.03 (0.01 to 0.05) |
 | + night-before injury report | 2.51 | **2.44** | +0.12 (0.07 to 0.17) |
@@ -74,7 +74,7 @@ Against the actual total on 2025-26: model 14.77 points off, close 14.56 (close 
 
 ## Ten seasons, each tuned on the season before (`walkforward.py`)
 
-| Season | Tuned on | Results only | + closes | + back-to-backs | + injuries | + box-score players | + player ratings |
+| Season | Tuned on | Starting model | + closes | + back-to-backs | + injuries | + box-score players | + player ratings |
 |---|---|---|---|---|---|---|---|
 | 2016-17 | 2015-16 | 2.02 | 1.57 | 1.51 | 1.51 | 1.45 | 1.44 |
 | 2017-18 | 2016-17 | 2.60 | 1.91 | 1.84 | 1.84 | 1.81 | 1.81 |

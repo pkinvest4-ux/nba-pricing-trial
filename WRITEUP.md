@@ -2,8 +2,8 @@
 
 **Patrick Kooy Velazquez** · Trial task for Jaden Kwek · October 2026
 
-**The result:** on 2025-26, my spreads were **1.99 points** off the pre-game close on average, down from
-**3.00** for a ratings-only model.
+**The result:** my starting model was **3.00 points** off the pre-game close on 2025-26. With the
+improvements, it's **1.99**.
 
 ---
 
@@ -40,7 +40,7 @@ only count a gain as real if it holds in 95% of 10,000 resamples of the games.
 
 | Step (2025-26) | Off the close | Gain (95% range) | Real gain in the last 10 seasons |
 |---|---|---|---|
-| Ratings from results only | 3.00 | | |
+| Starting model: team ratings and home court | 3.00 | | |
 | + learn from past closing lines | 2.44 | +0.55 (0.43 to 0.67) | 10 of 10 |
 | + second night of a back-to-back | 2.21 | +0.23 (0.17 to 0.29) | 10 of 10 |
 | + night-before injury report | 2.02 | +0.19 (0.13 to 0.26) | 4 of 4 with reports to learn from |
@@ -49,7 +49,7 @@ only count a gain as real if it holds in 95% of 10,000 resamples of the games.
 
 - Learning from past closing lines is the biggest improvement, and it was real in every one of the ten
   seasons.
-- Across the ten seasons, the full model beat the ratings-only model by 0.6 to 1.1 points every year.
+- Across the ten seasons, the improvements beat the starting model by 0.6 to 1.1 points every year.
 - Player ratings added almost nothing on 2025-26. I kept them because they never made a season worse.
 - Against the final scores, the close still beats me: it's 10.88 points off on average, and I'm 11.13.
 

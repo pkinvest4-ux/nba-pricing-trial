@@ -1,8 +1,8 @@
 # Pricing NBA Spreads the Night Before
 
 Prices every NBA game with what was known by the end of the day before, and grades the price against
-the pre-game closing line. On 2025-26 the model's spreads were **1.99 points** off the close on
-average, down from 3.00 for a ratings-only model.
+the pre-game closing line. The starting model was 3.00 points off the close on 2025-26; with the
+improvements, it's **1.99**.
 
 ## Start here
 

@@ -121,7 +121,7 @@ def tune(games, grid, season=None):
 def tuned_models(games, season=None):
     """Build the model one step at a time, choosing each step's settings on `season` (default 2024-25).
     Returns every step, so each one's contribution can be measured."""
-    # Step 1, ratings from results only: try every combination of k, home court and carry-over
+    # Step 1, the starting model (team ratings and home court): try every combination of k, home court and carry-over
     grid = [dict(k=k, hca=h, carry=c) for k in (0.01, 0.02, 0.03, 0.04, 0.05, 0.07)
             for h in (1.5, 2.0, 2.5, 3.0, 3.5) for c in (0.4, 0.55, 0.7, 0.85)]
     _, base = tune(games, grid, season)
