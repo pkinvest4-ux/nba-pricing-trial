@@ -1,30 +1,42 @@
-# Pricing NBA games the night before
+# Pricing NBA Spreads the Night Before
 
-**The model.** Every team has a rating in points and every player a value from his box scores. The
-predicted margin is the team rating gap, plus home court, plus the strength gap between the players
-expected to be available, plus a back-to-back penalty and the regulars listed out on the NBA's injury
-report. It walks forward one day at a time: it prices a day's games, then learns from their results and
-closing lines. Nothing from game day is used; injuries come from the last report of the evening before.
+**Patrick Kooy Velazquez** · Trial task for Jaden Kwek · October 2026
 
-**The data.**
-- **Closing lines: ESPN's recorded pre-game closes.** ESPN records each book's open and close before
-  tip-off and keeps in-game odds separate, so its close is a true pre-game number. That is ESPN BET
-  through 2024-25 and DraftKings for most of 2025-26, after ESPN changed partners. Seasons before
-  2023-24 use ESPN's consensus line, the best it has for them.
-- **Injuries: the NBA's official injury report** as it stood at the end of the evening before each
-  game. After Dec 21, 2025 the NBA's own addresses stop working, so those reports come from a research
-  archive of the original PDFs; every file matches its checksum, and the files that overlap with my own
-  NBA downloads read identically.
-- **Results and player minutes: ESPN box scores**, back to 2014-15.
+**The result:** on 2025-26, my spreads were **1.99 points** off the pre-game close on average, down from
+**3.00** for a ratings-only model.
 
-**How I tested it.** I chose every setting on 2024-25 and graded 2025-26. Then I ran the same process
-on each of the last ten seasons: tune on the season before, grade the next one once. A gain counts only
-if it holds in 95% of resamples of the games.
+---
 
-**Results.** On 2025-26 my spreads were **1.99 points** from the pre-game close on average, down from
-**3.00** for a ratings-only model. Across the ten seasons, the full model beat the ratings-only model by
-0.6 to 1.1 points every year. The close is still the better forecast of the final score (10.88 points
-off against my 11.13), as I would expect.
+## 1. The model
+
+I price each game the night before. The predicted home margin is the sum of six parts:
+
+1. **Team ratings:** the gap between the two teams' ratings, in points.
+2. **Home court:** the same for every home team.
+3. **Back-to-backs:** points a team gives up on its second night in a row.
+4. **Injuries:** the value of the regulars listed out on the NBA's injury report the night before.
+5. **Box-score players:** the strength gap between the players expected to play.
+6. **Player ratings:** the gap between the two expected lineups, with each player rated in points.
+
+The model walks through the schedule one day at a time. It prices a day's games, then learns from
+their results and closing lines before moving on to the next day.
+
+## 2. The data
+
+- **Closing lines:** ESPN's recorded pre-game closes. That's ESPN BET through 2024-25 and DraftKings for
+  most of 2025-26. Seasons before 2023-24 use ESPN's consensus line.
+- **Injuries:** the NBA's official injury report as it stood at the end of the evening before each game.
+  Reports after Dec 21, 2025 come from a research archive of the original PDFs, which I checked against
+  my own NBA downloads.
+- **Results and player minutes:** ESPN box scores, back to 2014-15.
+
+## 3. How I tested it
+
+I chose every setting on 2024-25, then graded 2025-26 once. To make sure one season wasn't luck, I
+repeated the whole process for each of the last ten seasons, tuning on the season before each one. I
+only count a gain as real if it holds in 95% of 10,000 resamples of the games.
+
+## 4. Results
 
 | Step (2025-26) | Off the close | Gain (95% range) | Real gain in the last 10 seasons |
 |---|---|---|---|
@@ -35,15 +47,26 @@ off against my 11.13), as I would expect.
 | + box-score player values | 2.00 | +0.02 (0.00 to 0.04) | 9 of 10 |
 | + full player ratings | **1.99** | +0.00 (-0.04 to 0.05) | 4 of 10 |
 
-Full player ratings never hurt but are inconsistent: they mattered most when the injury step had
-nothing to learn from (2021-22: +0.24).
+- Learning from past closing lines is the biggest improvement, and it was real in every one of the ten
+  seasons.
+- Across the ten seasons, the full model beat the ratings-only model by 0.6 to 1.1 points every year.
+- Player ratings added almost nothing on 2025-26. I kept them because they never made a season worse.
+- Against the final scores, the close still beats me: it's 10.88 points off on average, and I'm 11.13.
 
-**Second numbers.** Win probability: 5.0 percentage points from the no-vig closing price, log loss
-0.585 against the close's 0.570. Totals: 3.59 to **2.44 points** off the closing total, every step real.
+## 5. Second numbers
 
-**To be transparent.** Before the ten-season run, I graded the spread model on 2025-26 three times as
-I added pieces (2.14, 2.10, 2.05), each chosen on 2024-25 first with the code frozen in git. The
-ten-season run is the cleaner evidence: every season is graded with settings chosen only on earlier data.
+- **Win probability:** 5.0 percentage points from the no-vig closing price, with a log loss of 0.585
+  against the close's 0.570.
+- **Totals:** 3.59 down to **2.44 points** off the closing total, with every step real.
 
-**Next.** Projected minutes per player, pace for totals, and saving the injury report every night.
-Full notes are in [DETAILS.md](DETAILS.md).
+## 6. Order of work
+
+Before the ten-season run, I graded 2025-26 three times as I added pieces (2.14, 2.10, 2.05). Each piece
+was chosen on 2024-25 first, with the code frozen in git before it was graded. The ten-season run is the
+cleaner test, since every season is graded with settings chosen only on earlier seasons.
+
+## 7. Next
+
+Projected minutes for each player, pace for totals, and saving the injury report every night.
+
+The full numbers are in [DETAILS.md](DETAILS.md), and every game is in [results_by_game.csv](results_by_game.csv).

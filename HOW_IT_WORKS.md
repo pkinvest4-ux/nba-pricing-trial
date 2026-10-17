@@ -118,3 +118,18 @@ python3 explain.py WSH DET 2025-11-10
 
 prints each of the six parts for Wizards at Pistons, the model's number, the close and the result,
 plus both expected lineups with each player's minutes and rating.
+
+## 10. The spreadsheets (`export_results.py`)
+
+Writes `results_by_game.csv`, one row per game of 2024-25 and 2025-26: the six parts of the number, the
+model's number, the close and the result, how far apart they were, and the same for the total. Sort by
+"points off the close" to see the biggest misses. `results_summary.csv` has one row per season.
+
+## 11. Experiments that did not make the final model
+
+- **`pooled.py`** tunes on several past seasons at once instead of just the one before. Older seasons
+  pulled home court up and the back-to-back penalty down, toward an older NBA, and it did worse.
+- **`player_values.py`** values a missing player by plus-minus, points, win shares or BPM instead of
+  Game Score. None beat Game Score on the tuning season.
+
+The numbers are in [DETAILS.md](DETAILS.md).
