@@ -8,8 +8,9 @@ average, down from 3.00 for a ratings-only model.
 
 1. **[WRITEUP.md](WRITEUP.md):** the one-page summary.
 2. **[HOW_IT_WORKS.md](HOW_IT_WORKS.md):** a walk through the code, in the order a game gets priced.
-3. **[DETAILS.md](DETAILS.md):** every number, season by season.
-4. **[results_by_game.csv](results_by_game.csv):** every game of 2024-25 and 2025-26: how each number was
+3. **[EXAMPLE_GAME.md](EXAMPLE_GAME.md):** one real game, start to finish.
+4. **[DETAILS.md](DETAILS.md):** every number, season by season.
+5. **[results_by_game.csv](results_by_game.csv):** every game of 2024-25 and 2025-26: how each number was
    built, the close and the result. [results_summary.csv](results_summary.csv) has the season totals.
 
 ## Run it

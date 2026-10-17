@@ -118,6 +118,7 @@ python3 explain.py WSH DET 2025-11-10
 
 prints each of the six parts for Wizards at Pistons, the model's number, the close and the result,
 plus both expected lineups with each player's minutes and rating.
+The output is saved, with names tidied, in [EXAMPLE_GAME.md](EXAMPLE_GAME.md).
 
 ## 10. The spreadsheets (`export_results.py`)
 
